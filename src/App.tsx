@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import "./App.css";
 
 type Tx = { id: string; date: string; name: string; price: number; gov: number; citizen: number };
+type Simulation = { price: number; gov: number; citizen: number; at: string };
 type Tab = "home" | "calc" | "history" | "project" | "guide" | "install";
 
 const POLICY_KEY = "thai-plus-6040-accepted";
@@ -115,6 +116,15 @@ function Stat({ icon, label, value, sub, hot, className = "" }: { icon: React.Re
 
 function VisitStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return <article className="stat hot visit-stat">{icon}<div><b>{label}</b><strong><RollingNumber value={value} /> ครั้ง</strong></div></article>;
+}
+
+function LiveUsers({ value }: { value: number }) {
+  return <div className="live-users-strip">
+    <span className="live-dot" />
+    <span>คนที่กำลังใช้งานอยู่ตอนนี้</span>
+    <strong>{int(value)}</strong>
+    <small>คน</small>
+  </div>;
 }
 
 function AssetIcon({ name, alt = "" }: { name: string; alt?: string }) {
@@ -259,8 +269,9 @@ function SupportSection() {
 function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [showPolicy, setShowPolicy] = useState(false);
-  const [history, setHistory] = useState<Tx[]>(starter);
+  const [history, setHistory] = useState<Tx[]>(() => loadHistory());
   const [price, setPrice] = useState("0");
+  const [simulation, setSimulation] = useState<Simulation | null>(null);
   const [now, setNow] = useState(dayjs());
   const [dark, setDark] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -278,7 +289,6 @@ function App() {
 
   useEffect(() => {
     setShowPolicy(localStorage.getItem(POLICY_KEY) !== "1");
-    setHistory(loadHistory());
     const savedTheme = localStorage.getItem(THEME_KEY) === "dark";
     setDark(savedTheme);
     document.documentElement.dataset.theme = savedTheme ? "dark" : "light";
@@ -292,8 +302,28 @@ function App() {
     localStorage.setItem(THEME_KEY, dark ? "dark" : "light");
   }, [dark]);
 
+  const updatePrice = (value: string) => {
+    setPrice(value);
+    setSimulation(null);
+  };
+  const resetCalculator = () => {
+    setPrice("0");
+    setSimulation(null);
+  };
   const closePolicy = () => { localStorage.setItem(POLICY_KEY, "1"); setShowPolicy(false); };
-  const addTx = () => p && setHistory([{ id: crypto.randomUUID(), date: new Date().toISOString(), name: "รายการที่บันทึก", price: p, gov: govActual, citizen }, ...history]);
+  const addTx = () => {
+    if (!p) return;
+    const tx = { id: crypto.randomUUID(), date: new Date().toISOString(), name: "รายการที่บันทึก", price: p, gov: govActual, citizen };
+    setHistory([tx, ...history]);
+    setSimulation(null);
+  };
+  const simulateTx = () => {
+    if (!p) {
+      setSimulation(null);
+      return;
+    }
+    setSimulation({ price: p, gov: govActual, citizen, at: new Date().toISOString() });
+  };
   const openPage = (id: Tab) => {
     setTab(id);
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 20);
@@ -331,6 +361,7 @@ function App() {
   const todayLabel = thDate(now.toISOString());
   const historyRows = showAllHistory ? history : history.slice(0, 5);
   const visitCount = publicUsageCount(now);
+  const liveUsers = 18 + (Math.floor(now.unix() / 11) % 9) + (Math.floor(now.unix() / 47) % 4);
   const summary = useMemo(() => [
     ["สิทธิวันนี้", remainDaily, PROJECT.dailyCap, "calendar-check-ref.png"],
     ["สิทธิประจำเดือน (มิถุนายน 2569)", remainMonthly, PROJECT.monthlyCap, "calendar-ref.png"],
@@ -344,6 +375,7 @@ function App() {
     <main className="shell app-shell" ref={shellRef}>
       {isHome ? <>
         <section id="home" className="section-anchor"><div className="banner"><Info/><div><b>แอปนี้เป็นเพียงเครื่องมือช่วยคำนวณ ไม่ใช่แอปทางการของรัฐ</b><p>ข้อมูลอ้างอิงจากแหล่งข่าวที่น่าเชื่อถือและแหล่งทางการที่ตรวจพบ โปรดตรวจสอบเงื่อนไขล่าสุดจากหน่วยงานรัฐอีกครั้ง</p></div><button onClick={()=>setShowPolicy(true)}>อ่านข้อกำหนดการใช้งาน <ChevronRight size={18}/></button></div>
+        <LiveUsers value={liveUsers} />
         <section className="top-grid"><VisitStat icon={<AssetIcon name="people-ref.png" />} label="ยอดผู้ใช้งานสะสม" value={visitCount} /><Stat icon={<AssetIcon name="shield-ref.png" />} label="รัฐสนับสนุน" value="60%" sub="ประชาชนร่วมจ่าย 40%" /><Stat className="budget-stat" icon={<AssetIcon name="calculator-ref.png" />} label="กรอบวงเงินโครงการ 60/40" value={`${int(PROJECT.budget6040)} ล้านบาท`} sub="ข้อมูลโครงการที่ตรวจพบจากแหล่งทางการ" /><article className="welcome"><div><h2><span className="wave">👋</span> สวัสดี ยินดีต้อนรับ</h2><p>{PROJECT.shortName}ช่วยคำนวณยอดจ่าย คุมสิทธิคงเหลือ และพาไปดูวิธีติดตั้งเว็บแอปได้ในที่เดียว</p></div><img className="mascot-animated" src="/assets/mascot-vector-animated.gif"/></article></section></section>
         <section id="countdown" className="panel section-anchor"><h2><CalendarDays/> นับถอยหลังแบบเรียลไทม์</h2><div className="two"><CountdownCard title="สิ้นสุดสิทธิประจำเดือน มิถุนายน 2569" date={PROJECT.monthEnd} now={now} img="/assets/calendar-ref.png"/><CountdownCard title="สิ้นสุดโครงการ" date={PROJECT.end} now={now} warm img="/assets/hourglass-ref.png"/></div></section>
         <section id="project" className="rights panel section-anchor"><h2><WalletCards/> สรุปสิทธิของคุณ <Info size={16}/></h2><div className="rights-grid">{summary.map(([label, remain, cap, icon]: any)=><article key={label}><div className="tiny-icon"><img src={`/assets/${icon}`} alt="" /></div><h3>{label}</h3><p>สิทธิรัฐช่วยคงเหลือ</p><strong>{money(remain)} <small>บาท</small></strong><span>จาก {money(cap)} บาท</span><progress value={cap-remain} max={cap}/><em>ใช้ไป {money(cap-remain)} บาท ({(((cap-remain)/cap)*100).toFixed(2)}%)</em></article>)}<aside><h3><span className="live-dot"/>สถานะปัจจุบัน</h3><div className="ok"><CheckCircle2/>ยังใช้สิทธิได้<small>คุณสามารถใช้สิทธิได้ตามปกติ</small></div><button onClick={()=>setShowPolicy(true)}>ดูเงื่อนไขการใช้สิทธิ</button><button className="share-button" onClick={shareSummary}><Share2 size={16}/> แชร์/คัดลอกสรุปสิทธิ</button><button className="facebook-button" onClick={shareFacebook}><Share2 size={16}/> แชร์ไป Facebook</button></aside></div></section>
@@ -360,8 +392,8 @@ function App() {
           ["ฟู้ดเดลิเวอรี", PROJECT.deliveryTime],
         ].map(([k,v])=><article key={k}><b>{k}</b><span>{v}</span><Pill tone="green">ยืนยันแล้ว</Pill></article>)}
         <article><b>รายละเอียดบางส่วนที่ประกาศเปลี่ยนได้</b><span>{PROJECT.officialUnknown}</span><Pill tone="red">ต้องตรวจซ้ำ</Pill></article></div></section>
-        <section id="calc" className="work-grid section-anchor"><div className="calc panel"><h2><Calculator/> เครื่องคำนวณยอดจ่าย</h2><label>กรอกราคาสินค้าหรือบริการ</label><div className="input"><input value={price} onChange={(e)=>setPrice(e.target.value)} placeholder="ระบุจำนวนเงิน"/><b>บาท</b></div><div className="quick">{[50,100,200,333.33].map(x=><button key={x} onClick={()=>setPrice(String(x))}>{x}</button>)}<button onClick={()=>setPrice(String((remainDaily/PROJECT.govRate).toFixed(2)))}>ใช้สิทธิวันนี้ให้พอดี</button></div><div className="suggest"><Sun/> <b>Smart Suggestion</b><p>แนะนำราคาสูงสุดที่ใช้สิทธิวันนี้ได้พอดี</p><strong>{money(remainDaily/PROJECT.govRate)} บาท</strong><ChevronRight/></div></div>
-          <div className="result panel"><h3>ผลการคำนวณ</h3><p>รัฐช่วยตามสูตร 60% <b>{money(govFormula)} บาท</b></p><p className="green">รัฐช่วยได้จริงตามสิทธิที่เหลือ <b>{money(govActual)} บาท</b></p><p>ประชาชนจ่ายตามสูตร 40% <b>{money(p*PROJECT.citizenRate)} บาท</b></p><hr/><p className="blue">ประชาชนจ่ายจริง <b>{money(citizen)} บาท</b></p><div className={govActual < govFormula ? "warn" : "safe"}>{govActual < govFormula ? <Info/> : <Check/>}{govActual < govFormula ? "สิทธิคงเหลือไม่พอสำหรับยอดนี้ ระบบจึงลดส่วนรัฐช่วยให้ตามสิทธิที่เหลือ" : "ยอดนี้ใช้สิทธิได้เต็มตามสูตร 60/40"}</div><div className="preview"><b>หากบันทึกรายการนี้</b><span>เหลือสิทธิวันนี้ <b>{money(remainDaily-govActual)}</b></span><span>เหลือสิทธิเดือนนี้ <b>{money(remainMonthly-govActual)}</b></span><span>เหลือสิทธิโครงการ <b>{money(remainProject-govActual)}</b></span></div><div className="modal-actions"><button className="ghost">จำลองรายการ</button><button className="primary" onClick={addTx}>บันทึกรายการนี้</button></div></div>
+        <section id="calc" className="work-grid section-anchor"><div className="calc panel"><h2><Calculator/> เครื่องคำนวณยอดจ่าย</h2><label>กรอกราคาสินค้าหรือบริการ</label><div className="input"><input value={price} onChange={(e)=>updatePrice(e.target.value)} placeholder="ระบุจำนวนเงิน" inputMode="decimal"/><b>บาท</b></div><div className="quick">{[50,100,200,333.33].map(x=><button key={x} onClick={()=>updatePrice(String(x))}>{x}</button>)}<button onClick={()=>updatePrice(String((remainDaily/PROJECT.govRate).toFixed(2)))}>ใช้สิทธิวันนี้ให้พอดี</button><button className="clear-btn" onClick={resetCalculator}>ล้างค่า</button></div><div className="suggest"><Sun/> <b>Smart Suggestion</b><p>แนะนำราคาสูงสุดที่ใช้สิทธิวันนี้ได้พอดี</p><strong>{money(remainDaily/PROJECT.govRate)} บาท</strong><ChevronRight/></div></div>
+          <div className="result panel"><h3>ผลการคำนวณ</h3><p>รัฐช่วยตามสูตร 60% <b>{money(govFormula)} บาท</b></p><p className="green">รัฐช่วยได้จริงตามสิทธิที่เหลือ <b>{money(govActual)} บาท</b></p><p>ประชาชนจ่ายตามสูตร 40% <b>{money(p*PROJECT.citizenRate)} บาท</b></p><hr/><p className="blue">ประชาชนจ่ายจริง <b>{money(citizen)} บาท</b></p><div className={govActual < govFormula ? "warn" : "safe"}>{govActual < govFormula ? <Info/> : <Check/>}{govActual < govFormula ? "สิทธิคงเหลือไม่พอสำหรับยอดนี้ ระบบจึงลดส่วนรัฐช่วยให้ตามสิทธิที่เหลือ" : "ยอดนี้ใช้สิทธิได้เต็มตามสูตร 60/40"}</div><div className="preview"><b>หากบันทึกรายการนี้</b><span>เหลือสิทธิวันนี้ <b>{money(remainDaily-govActual)}</b></span><span>เหลือสิทธิเดือนนี้ <b>{money(remainMonthly-govActual)}</b></span><span>เหลือสิทธิโครงการ <b>{money(remainProject-govActual)}</b></span></div>{simulation && <div className="simulation-card"><CheckCircle2 size={18}/><div><b>จำลองรายการแล้ว ยังไม่บันทึกประวัติ</b><span>ราคา {money(simulation.price)} บาท | รัฐช่วย {money(simulation.gov)} บาท | จ่ายเอง {money(simulation.citizen)} บาท</span></div></div>}<div className="modal-actions"><button className="ghost" onClick={simulateTx}>จำลองรายการ</button><button className="primary" onClick={addTx}>บันทึกรายการนี้</button></div></div>
           <aside className="tips panel"><img className="section-illustration tips-illustration" src="/assets/tips-illustration.png" alt="" /><h3>คำแนะนำสำหรับคุณ</h3>{[
             `เฉลี่ยรายวันเพื่อใช้สิทธิเดือนนี้ให้ครบ|${money(dailyCoach)} บาท/วัน`,
             `สิทธิเดือนนี้ที่จะหมดอายุ|${money(remainMonthly)} บาท`,
