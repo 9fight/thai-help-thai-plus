@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="สิทธิพลัส">
+  <defs>
+    <linearGradient id="bg" x1="84" y1="74" x2="428" y2="438" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B63D8"/>
+      <stop offset="1" stop-color="#063A8F"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="144" y1="98" x2="404" y2="418" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE07A"/>
+      <stop offset="1" stop-color="#F2A900"/>
+    </linearGradient>
+    <filter id="shadow" x="42" y="50" width="428" height="428" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#002B6B" flood-opacity=".22"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#F5FAFF"/>
+  <g filter="url(#shadow)">
+    <rect x="74" y="72" width="364" height="364" rx="92" fill="url(#bg)"/>
+    <path d="M138 176c54-42 114-44 177-10 23 12 42 13 60 2 16-10 29-24 40-42-2 68-32 115-90 141-54 24-110 16-166-24-25-18-45-22-61-11-9 6-16 15-23 27 4-35 25-63 63-83Z" fill="#fff"/>
+    <path d="M146 174c57-28 111-23 162 15 17 13 34 19 52 18 18 0 35-8 52-22-13 33-38 58-75 73-47 19-97 11-149-25-25-17-46-21-62-12-13 7-22 19-28 35 0-37 16-64 48-82Z" fill="#E51B2E"/>
+    <circle cx="299" cy="300" r="72" fill="url(#coin)"/>
+    <path d="M299 252v96M265 285h68c18 0 29 12 29 31 0 18-11 32-29 32h-68" fill="none" stroke="#fff" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M221 295 252 326 326 246" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

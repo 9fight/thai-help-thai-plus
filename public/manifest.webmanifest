@@ -1,0 +1,16 @@
+{
+  "name": "เว็บคำนวณไทยช่วยไทยพลัส 60/40",
+  "short_name": "คำนวณไทยช่วยไทย",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7fbff",
+  "theme_color": "#0b4fb3",
+  "description": "เว็บแอปช่วยคำนวณสิทธิไทยช่วยไทย พลัส 60/40",
+  "icons": [
+    {
+      "src": "/assets/app-logo-new-cutout.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
